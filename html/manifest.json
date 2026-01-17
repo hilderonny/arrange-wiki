@@ -5,7 +5,7 @@
         {
             "src": "images/wiki.png",
             "type": "image/png",
-            "sizes": "512x512"
+            "sizes": "144x144"
         }
     ],
     "start_url": "index.html",
