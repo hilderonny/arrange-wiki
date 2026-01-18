@@ -1,56 +1,85 @@
-import { SSO, FILES } from '../arrange.js'
+import { FILES } from '../arrange.js'
 
 let HIERARCHY
+let SELECTED_HIERARCHY_DOM_ELEMENT
 
-function createHierarchyElement(node) {
+// Erstellt ein DIV für einen Hierarchieeintrag
+async function createHierarchyDomElement(hierarchyNode, selectedNode) {
     const domElement = document.createElement('div')
+    domElement.hierarchyNode = hierarchyNode
     const label = document.createElement('label')
-    label.innerHTML = node.label
+    label.innerHTML = hierarchyNode.label
+    label.addEventListener('click', async () => selectHierarchyDomElement(domElement))
     domElement.appendChild(label)
+    for (const childNode of hierarchyNode.children) {
+        domElement.appendChild(await createHierarchyDomElement(childNode, selectedNode))
+    }
+    if (hierarchyNode === selectedNode) {
+        await selectHierarchyDomElement(domElement)
+    }
     return domElement
 }
 
-async function handleAddButtonClicked() {
-    const filename = '' + Math.floor(Date.now() * 100000 + Math.random() * 100000)
-    HIERARCHY.push({
-        filename: filename,
-        label: 'Neuer Eintrag',
-        children: []
-    })
-    updateHierarchyDom()
-}
-
-async function loadHierarchyFromServer() {
+// Lädt die Hierarchie vom Server, wird einmalig beim Start oder beim Refresh gemacht
+async function loadHierarchy() {
     const file = await FILES.getFile('/wiki/hierarchy.json', true)
     if (file.status === 404) {
         HIERARCHY = []
-        await saveHierarchyToServer()
+        await saveHierarchy()
     } else {
         HIERARCHY = await file.json()
     }
 }
 
-async function saveHierarchyToServer() {
-    await FILES.saveFile('/wiki/hierarchy.json', JSON.stringify(HIERARCHY), true)
-}
-
-function updateDomElement(domElement, children) {
-    for (const child of children) {
-        const childElement = createHierarchyElement(child)
-        domElement.appendChild(childElement)
-        if (child.children) {
-            updateDomElement(childElement, child.children)
-        }
+// Baut den DOM der Hierarchie komplett neu auf, wird nach jeder Änderung gemacht
+async function rebuildHierarchyDom(selectedNode) {
+    const hierarchy = document.getElementById('hierarchy')
+    hierarchy.innerHTML = ''
+    for (const childNode of HIERARCHY) {
+        hierarchy.appendChild(await createHierarchyDomElement(childNode, selectedNode))
     }
 }
 
-function updateHierarchyDom() {
-    const hierarchy = document.getElementById('hierarchy')
-    hierarchy.innerHTML = ''
-    updateDomElement(hierarchy, HIERARCHY)
+// Speichert die Hierarchie auf dem Server, wird nach jeder Veränderung der Hierarchie gemacht
+async function saveHierarchy() {
+    await FILES.saveFile('/wiki/hierarchy.json', JSON.stringify(HIERARCHY), true)
 }
 
-document.getElementById('addbutton').addEventListener('click', handleAddButtonClicked)
+// Markiert ein Hierarchieelement, wenn es angeklickt wurde
+async function selectHierarchyDomElement(domElement) {
+    if (SELECTED_HIERARCHY_DOM_ELEMENT) {
+        SELECTED_HIERARCHY_DOM_ELEMENT.classList.remove('selected')
+    }
+    SELECTED_HIERARCHY_DOM_ELEMENT = domElement
+    SELECTED_HIERARCHY_DOM_ELEMENT.classList.add('selected')
+    const response = await FILES.getFile('/wiki/nodes/' + SELECTED_HIERARCHY_DOM_ELEMENT.hierarchyNode.filename, true)
+    const fileContent = response.ok ? await response.text() : ''
+    document.getElementById('content').innerHTML = fileContent
+}
 
-await loadHierarchyFromServer()
-updateHierarchyDom()
+// Wenn der "Neu" - Button angeklickt wurde wird an dem selektierten Hierarchieelement ein neues Unterelement erstellt
+document.getElementById('addbutton').addEventListener('click', async () => {
+    const label = prompt('Bezeichnung für neuen Eintrag', 'Neuer Eintrag')
+    if (!label) return
+    const filename = '' + Math.floor(Date.now() * 100000 + Math.random() * 100000)
+    const childrenList = SELECTED_HIERARCHY_DOM_ELEMENT ? SELECTED_HIERARCHY_DOM_ELEMENT.hierarchyNode.children : HIERARCHY
+    const newChild = {
+        filename: filename,
+        label: label,
+        children: []
+    }
+    childrenList.push(newChild)
+    await FILES.saveFile('/wiki/nodes/' + filename, '<h1>' + label + '</h1>', true)
+    await saveHierarchy()
+    await rebuildHierarchyDom(newChild)
+})
+
+document.getElementById('savebutton').addEventListener('click', async () => {
+    if (!SELECTED_HIERARCHY_DOM_ELEMENT) return
+    const content = document.getElementById('content').innerHTML
+    await FILES.saveFile('/wiki/nodes/' + SELECTED_HIERARCHY_DOM_ELEMENT.hierarchyNode.filename, content, true)
+    alert('Gespeichert.')
+})
+
+await loadHierarchy()
+rebuildHierarchyDom()
