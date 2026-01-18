@@ -16,13 +16,16 @@
     <div id="topbar">
         <label>WIKI</label>
         <div class="buttons">
-            <button>Aktualisieren</button>
+            <button onclick="location.reload()">Aktualisieren</button>
             <button id="addbutton">Neu</button>
-            <button id="savebutton">Speichern</button>
-            <button>Löschen</button>
+            <button class="invisible" id="editbutton">Bearbeiten</button>
+            <button class="invisible" id="cancelbutton">Abbrechen</button>
+            <button class="invisible" id="savebutton">Speichern</button>
+            <button class="invisible" id="deletebutton">Löschen</button>
         </div>
     </div>
-    <div id="content" contenteditable="true">WIKI</div>
+    <div id="content"></div>
+    <textarea class="invisible" id="editor"></textarea>
     
   </body>
   

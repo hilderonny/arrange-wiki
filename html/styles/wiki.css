@@ -34,3 +34,7 @@ body {
 #topbar {
     background-color: #eeeeee;
 }
+
+.invisible {
+    display: none;
+}

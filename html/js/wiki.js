@@ -20,6 +20,15 @@ async function createHierarchyDomElement(hierarchyNode, selectedNode) {
     return domElement
 }
 
+// Beendet den Bearbeiten-Modus
+function hideEditor() {
+    document.getElementById('content').classList.remove('invisible')
+    document.getElementById('editor').classList.add('invisible')
+    document.getElementById('editbutton').classList.remove('invisible')
+    document.getElementById('savebutton').classList.add('invisible')
+    document.getElementById('cancelbutton').classList.add('invisible')
+}
+
 // Lädt die Hierarchie vom Server, wird einmalig beim Start oder beim Refresh gemacht
 async function loadHierarchy() {
     const file = await FILES.getFile('/wiki/hierarchy.json', true)
@@ -55,6 +64,20 @@ async function selectHierarchyDomElement(domElement) {
     const response = await FILES.getFile('/wiki/nodes/' + SELECTED_HIERARCHY_DOM_ELEMENT.hierarchyNode.filename, true)
     const fileContent = response.ok ? await response.text() : ''
     document.getElementById('content').innerHTML = fileContent
+    document.getElementById('deletebutton').classList.remove('invisible')
+    hideEditor()
+}
+
+// Zeigt den Bearbeiten-Modus und übernimmt das HTML des selektierten Elementes in das Textfeld
+function showEditor() {
+    const contentDiv = document.getElementById('content')
+    contentDiv.classList.add('invisible')
+    const editorTextArea = document.getElementById('editor')
+    editorTextArea.value = contentDiv.innerHTML
+    editorTextArea.classList.remove('invisible')
+    document.getElementById('editbutton').classList.add('invisible')
+    document.getElementById('savebutton').classList.remove('invisible')
+    document.getElementById('cancelbutton').classList.remove('invisible')
 }
 
 // Wenn der "Neu" - Button angeklickt wurde wird an dem selektierten Hierarchieelement ein neues Unterelement erstellt
@@ -69,16 +92,28 @@ document.getElementById('addbutton').addEventListener('click', async () => {
         children: []
     }
     childrenList.push(newChild)
-    await FILES.saveFile('/wiki/nodes/' + filename, '<h1>' + label + '</h1>', true)
+    await FILES.saveFile('/wiki/nodes/' + filename, '<h1>' + label + '</h1>\n', true)
     await saveHierarchy()
     await rebuildHierarchyDom(newChild)
+    showEditor()
 })
 
+// Mit dem Bearbeiten-Button wird der Bearbeiten-Modus aktiviert
+document.getElementById('editbutton').addEventListener('click', async () => {
+    showEditor()
+})
+
+// Mit dem Abbrechen-Button wird der Bearbeiten-Modus deaktiviert
+document.getElementById('cancelbutton').addEventListener('click', async () => {
+    hideEditor()
+})
+
+// BeimSpeichern wird der Inhalt auf dem Server gespeichert und der Bearbeiten-Modus beendet
 document.getElementById('savebutton').addEventListener('click', async () => {
-    if (!SELECTED_HIERARCHY_DOM_ELEMENT) return
-    const content = document.getElementById('content').innerHTML
+    const content = document.getElementById('editor').value
     await FILES.saveFile('/wiki/nodes/' + SELECTED_HIERARCHY_DOM_ELEMENT.hierarchyNode.filename, content, true)
-    alert('Gespeichert.')
+    document.getElementById('content').innerHTML = content
+    hideEditor()
 })
 
 await loadHierarchy()
