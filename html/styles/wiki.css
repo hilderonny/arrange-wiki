@@ -16,13 +16,20 @@ body {
 }
 
 pre {
-    background-color: #f8f8f8;
-    border: 1px solid #cccccc;
+    -webkit-user-modify: read-write;
+    background-color: rgb(255, 243, 220);
+    border: 1px solid rgb(173, 124, 92);
     padding: 8px;
+    word-break: break-word;
+    white-space: pre-wrap;
 }
 
 code {
-    background-color: #f8f8f8;
+    -webkit-user-modify: read-write;
+    background-color: rgb(255, 243, 220);
+    border: 1px solid rgb(173, 124, 92);
+    word-break: break-word;
+    white-space: pre-wrap;
 }
 
 #hierarchy {
