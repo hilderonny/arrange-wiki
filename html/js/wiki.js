@@ -1,4 +1,4 @@
-import { FILES } from '../arrange.js'
+import * as Arrange from '/arrange/js/arrange.js'
 
 let HIERARCHY
 let SELECTED_HIERARCHY_DOM_ELEMENT
@@ -31,7 +31,7 @@ function hideEditor() {
 
 // Lädt die Hierarchie vom Server, wird einmalig beim Start oder beim Refresh gemacht
 async function loadHierarchy() {
-    const file = await FILES.getFile('/wiki/hierarchy.json', true)
+    const file = await Arrange.getPublicFile('/wiki/hierarchy.json')
     if (file.status === 404) {
         HIERARCHY = []
         await saveHierarchy()
@@ -51,7 +51,7 @@ async function rebuildHierarchyDom(selectedNode) {
 
 // Speichert die Hierarchie auf dem Server, wird nach jeder Veränderung der Hierarchie gemacht
 async function saveHierarchy() {
-    await FILES.saveFile('/wiki/hierarchy.json', JSON.stringify(HIERARCHY), true)
+    await Arrange.postPublicFile('/wiki/hierarchy.json', JSON.stringify(HIERARCHY))
 }
 
 // Markiert ein Hierarchieelement, wenn es angeklickt wurde
@@ -61,7 +61,7 @@ async function selectHierarchyDomElement(domElement) {
     }
     SELECTED_HIERARCHY_DOM_ELEMENT = domElement
     SELECTED_HIERARCHY_DOM_ELEMENT.classList.add('selected')
-    const response = await FILES.getFile('/wiki/nodes/' + SELECTED_HIERARCHY_DOM_ELEMENT.hierarchyNode.filename, true)
+    const response = await Arrange.getPublicFile('/wiki/nodes/' + SELECTED_HIERARCHY_DOM_ELEMENT.hierarchyNode.filename)
     const fileContent = response.ok ? await response.text() : ''
     document.getElementById('content').innerHTML = fileContent
     document.getElementById('deletebutton').classList.remove('invisible')
@@ -92,7 +92,7 @@ document.getElementById('addbutton').addEventListener('click', async () => {
         children: []
     }
     childrenList.push(newChild)
-    await FILES.saveFile('/wiki/nodes/' + filename, '<h1>' + label + '</h1>\n', true)
+    await Arrange.postPublicFile('/wiki/nodes/' + filename, '<h1>' + label + '</h1>\n')
     await saveHierarchy()
     await rebuildHierarchyDom(newChild)
     showEditor()
@@ -111,7 +111,7 @@ document.getElementById('cancelbutton').addEventListener('click', async () => {
 // BeimSpeichern wird der Inhalt auf dem Server gespeichert und der Bearbeiten-Modus beendet
 document.getElementById('savebutton').addEventListener('click', async () => {
     const content = document.getElementById('editor').value
-    await FILES.saveFile('/wiki/nodes/' + SELECTED_HIERARCHY_DOM_ELEMENT.hierarchyNode.filename, content, true)
+    await Arrange.postPublicFile('/wiki/nodes/' + SELECTED_HIERARCHY_DOM_ELEMENT.hierarchyNode.filename, content)
     document.getElementById('content').innerHTML = content
     hideEditor()
 })
