@@ -20,6 +20,14 @@ async function createHierarchyDomElement(hierarchyNode, selectedNode) {
     return domElement
 }
 
+async function deleteRecursively(hierarchyNode) {
+    while (hierarchyNode.children.length > 0) {
+        const lastChild = hierarchyNode.children.pop()
+        await deleteRecursively(lastChild)
+    }
+    await FILES.deletePath('/wiki/nodes/' + hierarchyNode.filename, true)
+}
+
 // Beendet den Bearbeiten-Modus
 function hideEditor() {
     document.getElementById('content').classList.remove('invisible')
@@ -98,14 +106,25 @@ document.getElementById('addbutton').addEventListener('click', async () => {
     showEditor()
 })
 
-// Mit dem Bearbeiten-Button wird der Bearbeiten-Modus aktiviert
-document.getElementById('editbutton').addEventListener('click', async () => {
-    showEditor()
-})
-
 // Mit dem Abbrechen-Button wird der Bearbeiten-Modus deaktiviert
 document.getElementById('cancelbutton').addEventListener('click', async () => {
     hideEditor()
+})
+
+
+document.getElementById('deletebutton').addEventListener('click', async () => {
+    if (!confirm('Soll das Element und alle Unterelemente wirklich gelöscht werden?')) return
+    const nodeToDelete = SELECTED_HIERARCHY_DOM_ELEMENT.hierarchyNode
+    await deleteRecursively(nodeToDelete)
+    const parentChildren = SELECTED_HIERARCHY_DOM_ELEMENT.parentNode.hierarchyNode?.children ?? HIERARCHY
+    parentChildren.splice(parentChildren.indexOf(nodeToDelete), 1)
+    await saveHierarchy()
+    rebuildHierarchyDom()
+})
+
+// Mit dem Bearbeiten-Button wird der Bearbeiten-Modus aktiviert
+document.getElementById('editbutton').addEventListener('click', async () => {
+    showEditor()
 })
 
 // BeimSpeichern wird der Inhalt auf dem Server gespeichert und der Bearbeiten-Modus beendet
