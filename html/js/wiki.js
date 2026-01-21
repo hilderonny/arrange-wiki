@@ -11,7 +11,7 @@ async function createHierarchyDomElement(hierarchyNode, selectedNode) {
     label.innerHTML = hierarchyNode.label
     label.addEventListener('click', async () => selectHierarchyDomElement(domElement))
     domElement.appendChild(label)
-    for (const childNode of hierarchyNode.children) {
+    for (const childNode of hierarchyNode.children.sort((a, b) => a.label.localeCompare(b.label))) {
         domElement.appendChild(await createHierarchyDomElement(childNode, selectedNode))
     }
     if (hierarchyNode === selectedNode) {
