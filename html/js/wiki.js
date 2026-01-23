@@ -3,7 +3,7 @@ import { marked } from './marked.esm.js'
 
 let HIERARCHY
 let SELECTED_HIERARCHY_NODE
-let originalContent
+let ORIGINAL_CONTENT
 
 let SELECTED_FILENAME = location.search.split('?').pop()
 
@@ -12,6 +12,8 @@ const PAGETITLE_DIV = document.getElementById('pagetitle')
 const EDITOR_TEXTAREA = document.getElementById('editor')
 const PREVIEW_DIV = document.getElementById('preview')
 const SAVE_BUTTON = document.getElementById('savebutton')
+const EDIT_BUTTON = document.getElementById('editbutton')
+const DELETE_BUTTON = document.getElementById('deletebutton')
 
 const OPEN_NAV_ELEMENTS = JSON.parse(localStorage.getItem('openNavElements') || '{}')
 
@@ -81,7 +83,7 @@ async function deleteRecursively(hierarchyNode) {
 // Beendet den Bearbeiten-Modus
 function hideEditor() {
     EDITOR_TEXTAREA.classList.add('invisible')
-    document.getElementById('editbutton').classList.remove('invisible')
+    EDIT_BUTTON.classList.remove('invisible')
     SAVE_BUTTON.classList.add('invisible')
     document.getElementById('cancelbutton').classList.add('invisible')
 }
@@ -101,9 +103,9 @@ async function loadContent() {
     const response = await Arrange.getPublicFile('/wiki/nodes/' + SELECTED_FILENAME)
     const fileContent = response.ok ? await response.text() : ''
     EDITOR_TEXTAREA.value = fileContent
-    originalContent = fileContent
+    ORIGINAL_CONTENT = fileContent
     updateContent()
-    document.getElementById('deletebutton').classList.remove('invisible')
+    DELETE_BUTTON.classList.remove('invisible')
     hideEditor()
     PAGETITLE_DIV.innerHTML = SELECTED_HIERARCHY_NODE?.label
 }
@@ -125,14 +127,14 @@ async function saveHierarchy() {
 async function save() {
     const content = EDITOR_TEXTAREA.value
     await Arrange.postPublicFile('/wiki/nodes/' + SELECTED_FILENAME, content)
-    originalContent = content
+    ORIGINAL_CONTENT = content
     SAVE_BUTTON.setAttribute('disabled', 'disabled')
 }
 
 // Zeigt den Bearbeiten-Modus und übernimmt das HTML des selektierten Elementes in das Textfeld
 function showEditor() {
     EDITOR_TEXTAREA.classList.remove('invisible')
-    document.getElementById('editbutton').classList.add('invisible')
+    EDIT_BUTTON.classList.add('invisible')
     SAVE_BUTTON.classList.remove('invisible')
     document.getElementById('cancelbutton').classList.remove('invisible')
 }
@@ -153,11 +155,12 @@ document.getElementById('addbutton').addEventListener('click', async () => {
         children: []
     }
     childrenList.push(newChild)
-    originalContent = '# ' + label + '\n'
-    EDITOR_TEXTAREA.value = originalContent
-    await Arrange.postPublicFile('/wiki/nodes/' + filename, originalContent)
+    ORIGINAL_CONTENT = '# ' + label + '\n'
+    EDITOR_TEXTAREA.value = ORIGINAL_CONTENT
+    await Arrange.postPublicFile('/wiki/nodes/' + filename, ORIGINAL_CONTENT)
     await saveHierarchy()
     SELECTED_FILENAME = filename
+    PAGETITLE_DIV.innerHTML = label
     history.pushState(undefined, undefined, '?' + filename)
     rebuildHierarchyDom()
     updateContent()
@@ -166,12 +169,12 @@ document.getElementById('addbutton').addEventListener('click', async () => {
 
 // Mit dem Abbrechen-Button wird der Bearbeiten-Modus deaktiviert
 document.getElementById('cancelbutton').addEventListener('click', async () => {
-    EDITOR_TEXTAREA.value = originalContent
+    EDITOR_TEXTAREA.value = ORIGINAL_CONTENT
     updateContent()
     hideEditor()
 })
 
-document.getElementById('deletebutton').addEventListener('click', async () => {
+DELETE_BUTTON.addEventListener('click', async () => {
     if (!confirm('Soll das Element und alle Unterelemente wirklich gelöscht werden?')) return
     const nodeToDelete = SELECTED_HIERARCHY_NODE
     await deleteRecursively(nodeToDelete)
@@ -181,7 +184,7 @@ document.getElementById('deletebutton').addEventListener('click', async () => {
 })
 
 // Mit dem Bearbeiten-Button wird der Bearbeiten-Modus aktiviert
-document.getElementById('editbutton').addEventListener('click', async () => {
+EDIT_BUTTON.addEventListener('click', async () => {
     showEditor()
 })
 
@@ -202,6 +205,19 @@ EDITOR_TEXTAREA.addEventListener('keydown', async (keyEvent) => {
         keyEvent.preventDefault()
         await save()
     }
+})
+
+document.querySelector('.sidebar header').addEventListener('click', () => {
+    EDIT_BUTTON.classList.add('invisible')
+    DELETE_BUTTON.classList.add('invisible')
+    SELECTED_FILENAME = ''
+    SELECTED_HIERARCHY_NODE = undefined
+    PAGETITLE_DIV.innerHTML = ''
+    history.pushState(undefined, undefined, '?')
+    rebuildHierarchyDom()
+    ORIGINAL_CONTENT = ''
+    EDITOR_TEXTAREA.value = ORIGINAL_CONTENT
+    updateContent()
 })
 
 await loadHierarchy()
