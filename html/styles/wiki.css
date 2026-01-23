@@ -283,7 +283,7 @@ td, th {
     }
 
     #nav-toggle:checked ~ .sidebar {
-        display: block;
+        display: flex;
         z-index: 100;
     }
 
