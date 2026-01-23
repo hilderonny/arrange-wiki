@@ -14,6 +14,7 @@ const PREVIEW_DIV = document.getElementById('preview')
 const SAVE_BUTTON = document.getElementById('savebutton')
 const EDIT_BUTTON = document.getElementById('editbutton')
 const DELETE_BUTTON = document.getElementById('deletebutton')
+const RENAME_BUTTON = document.getElementById('renamebutton')
 
 const OPEN_NAV_ELEMENTS = JSON.parse(localStorage.getItem('openNavElements') || '{}')
 
@@ -106,6 +107,7 @@ async function loadContent() {
     ORIGINAL_CONTENT = fileContent
     updateContent()
     DELETE_BUTTON.classList.remove('invisible')
+    RENAME_BUTTON.classList.remove('invisible')
     hideEditor()
     PAGETITLE_DIV.innerHTML = SELECTED_HIERARCHY_NODE?.label
 }
@@ -210,6 +212,7 @@ EDITOR_TEXTAREA.addEventListener('keydown', async (keyEvent) => {
 document.querySelector('.sidebar header').addEventListener('click', () => {
     EDIT_BUTTON.classList.add('invisible')
     DELETE_BUTTON.classList.add('invisible')
+    RENAME_BUTTON.classList.add('invisible')
     SELECTED_FILENAME = ''
     SELECTED_HIERARCHY_NODE = undefined
     PAGETITLE_DIV.innerHTML = ''
@@ -219,6 +222,17 @@ document.querySelector('.sidebar header').addEventListener('click', () => {
     EDITOR_TEXTAREA.value = ORIGINAL_CONTENT
     updateContent()
 })
+
+RENAME_BUTTON.addEventListener('click', async (keyEvent) => {
+    const newName = prompt('Name', SELECTED_HIERARCHY_NODE.label)
+    if (newName) {
+        SELECTED_HIERARCHY_NODE.label = newName
+        await saveHierarchy()
+        rebuildHierarchyDom()
+        PAGETITLE_DIV.innerHTML = newName
+    }
+})
+
 
 await loadHierarchy()
 rebuildHierarchyDom()
