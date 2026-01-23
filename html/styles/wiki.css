@@ -73,33 +73,32 @@ body {
     nav {
         overflow-y: auto;
 
-        a {
+        details.empty > summary::marker {
+            color: transparent;
+        }
+
+        details > details {
+            margin-left: 1.4rem;
+        }
+
+        summary {
+            white-space: nowrap;
+        }
+
+        label {
             color: #444444;
             cursor: pointer;
             border-radius: 4px;
-            display: block;
             padding: .1rem .4rem;
             text-decoration: none;
             white-space: nowrap;
         }
 
-        a:hover {
+        label:hover {
             background-color: rgba(0, 0, 0, 0.1);
         }
 
-        .level-1 {
-            padding-left: 1.4rem;
-        }
-
-        .level-2 {
-            padding-left: 2.4rem;
-        }
-
-        .level-3 {
-            padding-left: 3.4rem;
-        }
-
-        .selected {
+        label.selected {
             background-color: #2266ee;
             color: #ffffff;
         }
@@ -150,6 +149,7 @@ td, th {
     .page-title {
         font-size: 1.5rem;
         font-weight: 600;
+        height: 40px;
         margin: 0;
     }
 
@@ -263,7 +263,7 @@ td, th {
         position: absolute;
         width: 80%;
 
-        nav a {
+        nav label {
             white-space: unset;
         }
 

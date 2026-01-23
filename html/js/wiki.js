@@ -13,26 +13,50 @@ const EDITOR_TEXTAREA = document.getElementById('editor')
 const PREVIEW_DIV = document.getElementById('preview')
 const SAVE_BUTTON = document.getElementById('savebutton')
 
-async function processHierarchyNode(hierarchyNode, level = 0) {
-    const a = document.createElement('a')
-    a.href = '?' + hierarchyNode.filename
-    a.innerHTML = hierarchyNode.label
-    a.classList.add('level-' + level)
-    if (hierarchyNode.filename === SELECTED_FILENAME) {
+const OPEN_NAV_ELEMENTS = JSON.parse(localStorage.getItem('openNavElements') || '{}')
+
+function processHierarchyNode(hierarchyNode, parentDomNode = HIERARCHY_NAV) {
+    const details = document.createElement('details')
+    parentDomNode.appendChild(details)
+    const summary = document.createElement('summary')
+    details.appendChild(summary)
+    const label = document.createElement('label')
+    label.innerHTML = hierarchyNode.label
+    summary.appendChild(label)
+    const hierarchyNodeIsSelected = hierarchyNode.filename === SELECTED_FILENAME
+    if (hierarchyNodeIsSelected) {
         SELECTED_HIERARCHY_NODE = hierarchyNode
-        a.classList.add('selected')
+        label.classList.add('selected')
     }
-    a.addEventListener('click', async (clickEvent) => {
+    if (hierarchyNode.children.length < 1) {
+        details.classList.add('empty')
+    }
+    let nodeNeedsToBeOpened = hierarchyNodeIsSelected
+    for (const childNode of hierarchyNode.children.sort((a, b) => a.label.localeCompare(b.label))) {
+        const childIsSelected = processHierarchyNode(childNode, details)
+        if (childIsSelected) {
+            nodeNeedsToBeOpened = true
+        }
+    }
+    if (nodeNeedsToBeOpened || OPEN_NAV_ELEMENTS[hierarchyNode.filename]) {
+        details.open = true
+    }
+    label.addEventListener('click', async (clickEvent) => {
         clickEvent.preventDefault()
         SELECTED_FILENAME = hierarchyNode.filename
-        history.pushState(undefined, undefined, a.href)
+        history.pushState(undefined, undefined, '?' + hierarchyNode.filename)
         rebuildHierarchyDom()
         await loadContent()
     })
-    HIERARCHY_NAV.appendChild(a)
-    for (const childNode of hierarchyNode.children.sort((a, b) => a.label.localeCompare(b.label))) {
-        processHierarchyNode(childNode, level + 1)
-    }
+    details.addEventListener('toggle', async () => {
+        if (details.open && !details.classList.contains('empty')) {
+            OPEN_NAV_ELEMENTS[hierarchyNode.filename] = hierarchyNode.label
+        } else {
+            delete OPEN_NAV_ELEMENTS[hierarchyNode.filename]
+        }
+        localStorage.setItem('openNavElements', JSON.stringify(OPEN_NAV_ELEMENTS))
+    })
+    return nodeNeedsToBeOpened
 }
 
 function deleteChild(childList, nodeToDelete) {
@@ -89,7 +113,7 @@ function rebuildHierarchyDom() {
     const hierarchy = document.getElementById('hierarchy')
     hierarchy.innerHTML = ''
     for (const childNode of HIERARCHY) {
-        processHierarchyNode(childNode, 0)
+        processHierarchyNode(childNode)
     }
 }
 
